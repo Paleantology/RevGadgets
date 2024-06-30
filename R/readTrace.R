@@ -1,3 +1,9 @@
+library(tidyverse)
+library(jsonlite)
+library(dplyr)
+
+
+
 #' Read trace
 #'
 #' Reads in MCMC log files
@@ -54,9 +60,7 @@
 
 
 
-library(tidyverse)
-library(jsonlite)
-library(dplyr)
+
 
 # Function to read and parse JSON lines file
 readAndParseJSON <- function(file) {
