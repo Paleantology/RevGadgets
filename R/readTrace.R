@@ -1,3 +1,9 @@
+library(tidyverse)
+library(jsonlite)
+
+
+
+
 #' Read trace
 #'
 #' Reads in MCMC log files
@@ -28,47 +34,12 @@
 #' # read and process a single trace file
 #'
 #' \donttest{
-#' # download the example dataset to working directory
-#' url_gtr <-
-#'    "https://revbayes.github.io/tutorials/intro/data/primates_cytb_GTR.log"
-#' dest_path_gtr <- "primates_cytb_GTR.log"
-#' download.file(url_gtr, dest_path_gtr)
-#'
-#' # to run on your own data, change this to the path to your data file
-#' file_single <- dest_path_gtr
-#'
-#' one_trace <- readTrace(paths = file_single)
-#'
-#' # remove file
-#' # WARNING: only run for example dataset!
-#' # otherwise you might delete your data!
-#' file.remove(dest_path_gtr)
-#'
-#' # read and process multiple trace files, such as from multiple runs of
-#' # the same analysis
-#'
-#' # download the example dataset to working directory
-#' url_1 <-
-#' "https://revbayes.github.io/tutorials/intro/data/primates_cytb_GTR_run_1.log"
-#' dest_path_1 <- "primates_cytb_GTR_run_1.log"
-#' download.file(url_1, dest_path_1)
-#'
-#' url_2 <-
-#' "https://revbayes.github.io/tutorials/intro/data/primates_cytb_GTR_run_2.log"
-#' dest_path_2 <- "primates_cytb_GTR_run_2.log"
-#' download.file(url_2, dest_path_2)
-#'
-#' # to run on your own data, change this to the path to your data file
-#' file_1 <- dest_path_1
-#' file_2 <- dest_path_2
-#'
-#' # read in the multiple trace files
-#' multi_trace <- readTrace(path = c(file_1, file_2), burnin = 0.0)
-#'
-#' # remove files
-#' # WARNING: only run for example dataset!
-#' # otherwise you might delete your data!
-#' file.remove(dest_path_1, dest_path_2)
+#' 
+#' # Example usage:
+#' file <- "C:/Users/SuZamii/Documents/bio-summer/simple/part_run_2.log"
+#' parsed_df <- readAndParseJSON(file)
+#' View the parsed and unnested data frame
+#' View(parsed_df)
 #' }
 #'
 #' @export
@@ -77,9 +48,6 @@
 
 
 
-# Load necessary libraries
-library(tidyverse)
-library(jsonlite)
 
 # Function to read and parse JSON lines file
 readAndParseJSON <- function(file) {
@@ -96,18 +64,15 @@ readAndParseJSON <- function(file) {
   # Read JSON lines file line by line
   json_lines <- readLines(file)
   
-  # Parse each line of JSON data
-#  parsed_data <- map(json_lines, parse_json_safe)
-  
   # Initialize an empty list to store parsed data
   parsed_data <- list()
   
-  # Function to check if a line is metadata
+  # Function to check if a line is metadata (to skip very first line showing fields, formats, etc. )
   is_metadata_line <- function(line) {
     tryCatch({
       json <- fromJSON(line, simplifyVector = TRUE)
       # Check if the line contains specific metadata keys to skip
-      any(names(json) %in% c("atomic", "fields", "format", "nested", "version"))
+      any(names(json) %in% c("atomic", "fields", "format"))
     }, error = function(e) {
       return(FALSE)
     })
@@ -139,7 +104,7 @@ readAndParseJSON <- function(file) {
     return(flat_row)
   })
   
-  # Combine all parsed JSON objects into a single data frame
+# Combine all parsed JSON objects into a single data frame
   df <- bind_rows(parsed_data)
   return(df)
 }
@@ -210,24 +175,8 @@ readTrace <- function(paths, format = "simple", delim = "\t", burnin = 0.1, chec
     return(output[[1]])
   }
 }
-# Example usage:
-file <- "C:/Users/SuZamii/Documents/bio-summer/simple/part_run_1.log"
-parsed_df <- readAndParseJSON(file)
-# View the parsed and unnested data frame
-View(parsed_df)
 
 
-# How to call the function
-output <- readTrace(paths = c("simple/part_run_1.log", "simple/part_run_2.log"),
-                    format = "json",
-                    delim = "\t",
-                    burnin = 0.1,
-                    check.names = FALSE)
-# Display formatted output using a loop
-for (i in seq_along(output)) {
-  cat(paste("File", i, "\n"))
-  print(output[[i]], row.names = TRUE)
-  cat("\n")
-}
+
 
 
