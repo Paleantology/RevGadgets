@@ -10,3 +10,5 @@
 
 # plot file
 tests/testthat/Rplots.pdf
+not_as_simple/vectors.log
+not_as_simple/vectors.trees
