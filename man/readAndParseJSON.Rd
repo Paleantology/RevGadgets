@@ -10,14 +10,14 @@ readAndParseJSON(file)
 \item{paths}{(vector of character strings; no default) File path(s) to trace
 file.}
 
-\item{format}{(single character string; default = simple) Indicates type of
+\item{format}{(single character string; default = "simple") Indicates type of
 MCMC trace, complex indicates cases where trace contains vectors of vectors/
 matrices - mnStochasticVariable monitor will sometimes be of this type.}
 
-\item{delim}{(single character string; default = "\\t") Delimiter of file.}
+\item{delim}{(single character string; default = "\t") Delimiter of file.}
 
 \item{burnin}{(single numeric value; default = 0.1) Fraction of generations
-to  discard (if value provided is between 0 and 1) or number of generations
+to discard (if value provided is between 0 and 1) or number of generations
 (if value provided is greater than 1).}
 
 \item{check.names}{(logical; default = FALSE) Passed to utils::read.table();
@@ -27,22 +27,9 @@ syntactically invalid characters.}
 \item{...}{(various) Additional arguments passed to utils::read.table().}
 }
 \value{
-List of dataframes (of length 1 if only 1 log file provided).
-}
-\description{
-Reads in MCMC log files
-}
-\details{
-Reads in one or multiple MCMC log files from the same analysis
-and discards a user-specified burn-in, compatible with multiple monitor
-types. If the trace contains vectors of vectors and the user does not specify
-format = "complex", readTrace() will read in those columns as factors
-rather than as numeric vectors.
-}
-\examples{
-# read and process a single trace file
+List of dataframes .
 
-\donttest{
+ \donttest{
 # Example usage:
 file <- "simplerev/simple/part_run_1.log"
 parsed_df <- readAndParseJSON(file)
@@ -50,7 +37,7 @@ parsed_df <- readAndParseJSON(file)
 # View the parsed and unnested data frame
 View(parsed_df)
 # How to call the function
-output <- readTrace(paths = c("simplerev/simple/part_run_1.log", "simplerev/simple/part_run_2.log"),
+output <- readTrace(paths = c("simple/part_run_1.log", "simple/part_run_2.log"),
                     format = "json",
                     delim = "\t",
                     burnin = 0.1,
@@ -63,5 +50,14 @@ for (i in seq_along(output)) {
   cat("\n")
 }
 }
-
+}
+\description{
+Reads in MCMC log files or JSON files
+}
+\details{
+Reads in one or multiple MCMC log files from the same analysis
+and discards a user-specified burn-in, compatible with multiple monitor
+types. If the trace contains vectors of vectors and the user does not specify
+format = "complex", readTrace() will read in those columns as factors
+rather than as numeric vectors.
 }

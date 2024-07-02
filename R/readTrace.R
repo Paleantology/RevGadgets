@@ -195,11 +195,10 @@ readTrace <- function(paths,
   } else {
     return(output[[1]])
   }
+  
 }
-
 # Example usage:
-file <- readline(prompt = "Enter file path to JSON lines file: ")
+file <- readline(promt = "Enter file path to JSON lines file: ")
 parsed_df <- readAndParseJSON(file)
-
 # View the parsed and unnested data frame
 View(parsed_df)
