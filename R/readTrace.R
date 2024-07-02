@@ -36,7 +36,7 @@ library(jsonlite)
 #' \donttest{
 #' 
 #' # Example usage:
-#' file <- "C:/Users/SuZamii/Documents/bio-summer/simple/part_run_2.log"
+#' file <- "C:/Users/SuZamii/Documents/bio-summer/simple/part_run_1.log"
 #' parsed_df <- readAndParseJSON(file)
 #' View the parsed and unnested data frame
 #' View(parsed_df)
@@ -130,7 +130,7 @@ readTrace <- function(paths, format = "simple", delim = "\t", burnin = 0.1, chec
   # Helper function to read data based on file extension
   read_data <- function(path, format,  delim, check.names, ...) {
   
-    if (format() == "json") {
+    if (format == "json") {
       return(readAndParseJSON(path))
     } else {
       return(utils::read.table(
@@ -178,5 +178,8 @@ readTrace <- function(paths, format = "simple", delim = "\t", burnin = 0.1, chec
 
 
 
-
+ file <- "simple/part_run_1.log"
+ parsed_df <- readAndParseJSON(file)
+ #View the parsed and unnested data frame
+ View(parsed_df)
 
