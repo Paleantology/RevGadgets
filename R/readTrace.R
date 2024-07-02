@@ -2,11 +2,9 @@ library(tidyverse)
 library(jsonlite)
 library(dplyr)
 
-
-
 #' Read trace
 #'
-#' Reads in MCMC log files
+#' Reads in MCMC log files or JSON files
 #'
 #' Reads in one or multiple MCMC log files from the same analysis
 #' and discards a user-specified burn-in, compatible with multiple monitor
@@ -16,24 +14,21 @@ library(dplyr)
 #'
 #' @param paths (vector of character strings; no default) File path(s) to trace
 #' file.
-#' @param format (single character string; default = simple) Indicates type of
+#' @param format (single character string; default = "simple") Indicates type of
 #' MCMC trace, complex indicates cases where trace contains vectors of vectors/
 #' matrices - mnStochasticVariable monitor will sometimes be of this type.
-#' @param delim (single character string; default = "\\t") Delimiter of file.
+#' @param delim (single character string; default = "\t") Delimiter of file.
 #' @param burnin (single numeric value; default = 0.1) Fraction of generations
-#' to  discard (if value provided is between 0 and 1) or number of generations
+#' to discard (if value provided is between 0 and 1) or number of generations
 #' (if value provided is greater than 1).
 #' @param check.names (logical; default = FALSE) Passed to utils::read.table();
 #' indicates if utils::read.table() should check column names and replace
 #' syntactically invalid characters.
 #' @param ... (various) Additional arguments passed to utils::read.table().
 #'
-#' @return List of dataframes (of length 1 if only 1 log file provided).
+#' @return List of dataframes .
 #'
-#' @examples
-#' # read and process a single trace file
-#'
-#' \donttest{
+#'  \donttest{
 #' # Example usage:
 #' file <- "simplerev/simple/part_run_1.log"
 #' parsed_df <- readAndParseJSON(file)
@@ -42,7 +37,7 @@ library(dplyr)
 #' View(parsed_df)
 
 #' # How to call the function
-#' output <- readTrace(paths = c("simplerev/simple/part_run_1.log", "simplerev/simple/part_run_2.log"),
+#' output <- readTrace(paths = c("simple/part_run_1.log", "simple/part_run_2.log"),
 #'                     format = "json",
 #'                     delim = "\t",
 #'                     burnin = 0.1,
@@ -57,7 +52,6 @@ library(dplyr)
 #' }
 #'
 #' @export
-
 
 
 
@@ -77,23 +71,44 @@ readAndParseJSON <- function(file) {
   
   # Read JSON lines file line by line
   json_lines <- readLines(file)
+  # Initialize an empty list to store parsed data
+  parsed_data <- list()
   
-  # Parse each line of JSON data
-  parsed_data <- map(json_lines, parse_json_safe)
+  # Function to check if a line is metadata (to skip very first line showing fields, formats, etc. )
+  is_metadata_line <- function(line) {
+    tryCatch({
+      json <- fromJSON(line, simplifyVector = TRUE)
+      # Check if the line contains specific metadata keys to skip
+      any(names(json) %in% c("atomic", "fields", "format"))
+    }, error = function(e) {
+      return(FALSE)
+    })
+  }
+  
+  # Skip metadata lines
+  for (line in json_lines) {
+    if (!is_metadata_line(line)) {
+      parsed_data <- c(parsed_data, list(parse_json_safe(line)))
+    }
+  }
   
   # Filter out any NULL values that failed to parse
   parsed_data <- compact(parsed_data)
   
-  # Convert list columns to comma-separated strings
-  parsed_data <- lapply(parsed_data, function(row) {
-    row <- lapply(row, function(value) {
-      if (is.list(value)) {
-        paste(unlist(value), collapse = ",")
+  # Convert list columns to separate columns
+  parsed_data <- map(parsed_data, function(row) {
+    flat_row <- list()
+    for (name in names(row)) {
+      if (is.list(row[[name]])) {
+        values <- unlist(row[[name]])
+        for (i in seq_along(values)) {
+          flat_row[[paste(name, i, sep = "_")]] <- values[[i]]
+        }
       } else {
-        value
+        flat_row[[name]] <- row[[name]]
       }
-    })
-    return(row)
+    }
+    return(flat_row)
   })
   
   # Combine all parsed JSON objects into a single data frame
@@ -182,3 +197,9 @@ readTrace <- function(paths,
   }
 }
 
+# Example usage:
+file <- readline(prompt = "Enter file path to JSON lines file: ")
+parsed_df <- readAndParseJSON(file)
+
+# View the parsed and unnested data frame
+View(parsed_df)
