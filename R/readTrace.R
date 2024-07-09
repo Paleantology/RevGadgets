@@ -1,9 +1,3 @@
-library(tidyverse)
-library(jsonlite)
-
-
-
-
 #' Read trace
 #'
 #' Reads in MCMC log files
@@ -47,9 +41,16 @@ library(jsonlite)
 #' 
 
 
-# Function to read trace files
-readTrace <- function(paths, format = "simple", delim = "\t", burnin = 0.1, check.names = FALSE, ...) {
-  # Enforce argument matching
+
+readTrace <- function(paths,
+                      format = "simple",
+                      delim = "\t",
+                      burnin = 0.1,
+                      check.names = FALSE,
+                      verbose = TRUE,
+                      ...) {
+  
+  # Enforce argument matching and checks
   if (!is.character(paths)) {
     stop("All paths must be character strings.")
   }
@@ -63,85 +64,85 @@ readTrace <- function(paths, format = "simple", delim = "\t", burnin = 0.1, chec
   # Ensure format is either "simple" or "complex" or "json"
   format <- match.arg(format, choices = c("simple", "complex", "json"))
   
-  if (!is.character(delim) || nchar(delim) != 1) {
-    stop("Delimiter must be a single character string.")
-  }
+  if (!is.character(delim) || nchar(delim) != 1)
+    stop("delim must be a single character string")
   
-  if (!is.numeric(burnin) || length(burnin) != 1 || burnin < 0) {
-    stop("Burnin must be a single positive numeric value.")
-  }
+  if (!is.numeric(burnin) || burnin < 0)
+    stop("burnin must be a single positive numeric value")
   
-  # Helper function to read data based on file extension
-  read_data <- function(path, format, delim, check.names, ...) {
+  num_paths <- length(paths)
+  
+  # Check that the file headings match for all traces
+  header <- vector("list", num_paths)
+  for (i in 1:num_paths) {
     if (format == "json") {
-      return(readAndParseJSON(path))
+      # Use your custom function to read and parse JSON
+      json_data <- readAndParseJSON(paths[i])
+      header[[i]] <- names(json_data)
     } else {
-      return(utils::read.table(
-        file = path,
+      header[[i]] <- colnames(
+        utils::read.table(
+          file = paths[i],
+          header = TRUE,
+          sep = delim,
+          check.names = check.names,
+          nrows = 0,
+          ...
+        )
+      )
+    }
+  }
+  
+  all_headers <- unique(unlist(header))
+  for (i in seq_len(length(header))) {
+    if (!setequal(all_headers, header[[i]])) {
+      stop("Not all headers of trace files match")
+    }
+  }
+  
+  # Read in the traces
+  output <- vector("list", num_paths)
+  for (i in 1:num_paths) {
+    if (verbose) {
+      message(paste0("Reading in log file ", i, "\n"))
+    }
+    
+    if (format == "json") {
+      # Use your custom function to read and parse JSON
+      out <- readAndParseJSON(paths[i])
+      out <- as.data.frame(out)  # Convert JSON data to data frame if necessary
+    } else if (format == "complex") {
+      stop("Complex trace type currently not supported")
+    } else {
+      out <- utils::read.table(
+        file = paths[i],
         header = TRUE,
         sep = delim,
         check.names = check.names,
         ...
-      ))
+      )
     }
-  }
-  
-  # Check that the file headings match for all traces
-  headers <- lapply(paths, function(path) {
-    data <- read_data(path, format, delim, check.names, nrows = 0, ...)
-    colnames(data)
-  })
-  
-  unique_headers <- unique(headers)
-  if (length(unique_headers) > 1) {
-    stop("Not all headers of trace files match.")
-  }
-  
-  # Read in the traces
-  output <- lapply(paths, function(path) {
-    message(paste0("Reading log file: ", path))
-    data <- read_data(path, delim, check.names, ...)
     
-    # Apply burnin if specified
-    if (burnin >= nrow(data)) {
-      stop("Burnin larger than provided trace file.")
-    }
+    if (burnin >= nrow(out))
+      stop("Burnin larger than provided trace file")
     
     if (burnin >= 1) {
-      data <- data[(burnin + 1):nrow(data), ]
-    } else if (burnin > 0) {
-      discard <- ceiling(burnin * nrow(data))
-      data <- data[(discard + 1):nrow(data), ]
+      output[[i]] <- out[(burnin + 1):nrow(out),]
+    } else if (burnin < 1 & burnin > 0) {
+      discard <- ceiling(burnin * nrow(out))
+      output[[i]] <- out[(discard + 1):nrow(out),]
+    } else if (burnin == 0) {
+      output[[i]] <- out
+    } else {
+      stop("Invalid burnin value")
     }
-    
-    return(data)
-  })
-  
-  # Return each data frame separately (if multiple paths provided)
-  if (length(output) > 1) {
-    return(output)
-  } else {
-    return(output[[1]])
   }
-}
-
-# Example usage within readTrace
-
-
-# How to call the function
-output <- readTrace(paths = c("../simple/part_run_1.log", "../simple/part_run_2.log"),
-                    format = "json",
-                    delim = ",",
-                    burnin = 0.1,
-                    check.names = FALSE)
-
-# Display formatted output using a loop
-for (i in seq_along(output)) {
-  cat(paste("File", i, "\n"))
-  print(output[[i]], row.names = TRUE)
-  cat("\n")
-}
   
+  # Return output
+  return(output)
+}
 
-# Example usage
-# readTrace_example()
+# Example for reading a JSON formatted log file 
+#result_json_log <- readTrace(paths = "../simple/primates_cytb_GTR.log") 
+result_json_log <- readTrace(paths = "../simple/part_run_1.log", format = "json") 
+view(result_json_log)
